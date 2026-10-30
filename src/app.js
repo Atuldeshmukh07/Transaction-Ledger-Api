@@ -1,0 +1,20 @@
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
+const accountRoutes = require('./routes/accountRoutes');
+const errorHandler = require('./middleware/errorHandler');
+
+const app = express();
+app.use(helmet());
+app.use(cors());
+app.use(express.json({ limit: '100kb' }));
+if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'));
+app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+app.use('/api', accountRoutes);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(YAML.load(require('path').join(__dirname, '../openapi.yaml'))));
+app.use((_req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } }));
+app.use(errorHandler);
+module.exports = app;
